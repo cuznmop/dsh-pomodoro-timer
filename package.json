@@ -1,6 +1,6 @@
 {
   "name": "dsh-pomodoro-timer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pomodoro timer for the DeepSeek Harness Web UI: a sidebar page with focus/short-break/long-break cycles plus a countdown pill beside the composer. · DSH Web 番茄钟：侧栏整页（专注/短休息/长休息）+ 输入框旁倒计时胶囊。",
   "type": "module",
   "license": "MIT",

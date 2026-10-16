@@ -132,13 +132,46 @@ npm publish --otp=123456    # 认证器 App 里的 6 位码
 
 ### 2.2 长期方案：trusted publishing（推荐，免令牌免验证码）
 
-首次发布成功、仓库推上 GitHub 之后，把发布交给 GitHub Actions（我附的 `.github/workflows/publish.yml` 已经写好 OIDC 流程）：
+把发布交给 GitHub Actions（仓库里的 `.github/workflows/publish.yml` 已经是写好的 OIDC 流程）。**注意顺序**：
+
+**① 先让 `publish.yml` 出现在仓库的默认分支上。** npm 会校验工作流文件，没通过校验的信任配置会自动过期（[2026-10-02 变更](https://github.blog/changelog/2026-10-02-unvalidated-npm-trusted-publishing-configurations-now-expire)）。本机首次推送时这个文件因为缺 `Workflows` 权限被跳过了（远端 13/14），先补上：
 
 ```powershell
-# 在仓库目录里执行；注意这一步本身也需要交互式 2FA（会提示验证码）
-npm trust github dsh-pomodoro-timer --file publish.yml --repo <你的用户名>/dsh-pomodoro-timer --allow-publish
-npm trust list dsh-pomodoro-timer      # 确认配置生效
+# 方式 1（最快）：网页建文件
+#   https://github.com/cuznmop/dsh-pomodoro-timer/new/main/.github/workflows
+#   文件名 publish.yml，内容整段复制自本地：
+#   plugins\dsh-pomodoro-timer\.github\workflows\publish.yml
+
+# 方式 2：给令牌加上 Workflows: Read and write，再用 API 脚本补推（脚本会发现远端 tree 不一致）
+node --use-system-ca C:\Users\33249\Documents\deepseek-harness\default-workspace\tools\github-push-api.mjs cuznmop/dsh-pomodoro-timer
 ```
+
+**② 再配置信任关系。** 两条路，网页那条对 passkey 也有效：
+
+```powershell
+# 路 A：CLI（需要先 npm login；只有 TOTP 认证器能用 --otp）
+npm login
+npm whoami                                    # 必须能打印用户名，否则下面一定 401
+npm trust github dsh-pomodoro-timer --file publish.yml --repo cuznmop/dsh-pomodoro-timer --allow-publish --otp=<6 位码>
+npm trust list dsh-pomodoro-timer
+```
+
+```
+路 B：网页（推荐）
+  https://www.npmjs.com/package/dsh-pomodoro-timer/access  → Trusted Publisher → GitHub Actions
+  Organization or user : cuznmop
+  Repository           : dsh-pomodoro-timer
+  Workflow filename    : publish.yml
+  Environment          : 留空
+  Allowed actions      : 勾 npm publish
+```
+
+**踩过的坑（本机实测）**：
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| `npm trust …` 报 `401 {"error":"You must be logged in to publish packages."}` | 网页登录留下的会话令牌已失效（`npm whoami` 也 401） | 重新 `npm login`，用 `npm whoami` 确认 |
+| `npm trust …` 报 `Two-factor authentication is required for this operation` | 账号级操作必须交互式 2FA；CLI 只能靠 `--otp`（TOTP） | 带 `--otp=<6 位码>`，或改用网页路 B（passkey 也行） |
 
 之后只要推一个 GitHub Release（tag 形如 `v1.0.1`），工作流就会校验 tag 与 `package.json` 版本一致后自动 `npm publish --provenance`，**不需要任何 token，也不需要每次输验证码**。
 
@@ -260,12 +293,23 @@ npm trust list dsh-pomodoro-timer
 ## 发新版本
 
 ```powershell
-# 1) 改 package.json 的 version
-# 2) 提交并打 tag，推 Release（走工作流），或本地 npm publish
-git tag v1.1.0 && git push origin v1.1.0
+# 1) 先改 package.json 的 version —— 忘了这步会直接报错：
+#    npm error You cannot publish over the previously published versions: 1.0.0
+# 2) 提交
+git add -A; git commit -m "1.0.1: …"
+# 3) 发布（现在账号有 2FA，会要验证码）
+npm publish --otp=123456
+# 4) 推仓库（有 Workflows 权限的话，用 API 脚本；否则网页补文件）
+git tag v1.0.1 && git push origin v1.0.1
 ```
 
 一个容易踩的坑：社区里的 `dshmarket` 对新发布的 npm 版本有一段**新版本等待期**（fresh-release wait），刚发出去的版本短时间内它可能拒绝安装；等过了就好，`dsh plugin add` 不受影响（这个行为我是从 dshmarket 的源码注释里读到的）。
+
+### 1.0.1 这一步做了什么（本次）
+
+- `package.json`：`1.0.0` → `1.0.1`（1.0.0 是建库之前发的快照，里面**没有** `repository` / `homepage` / `bugs` / `author`，npm 页面因此不显示仓库链接）
+- 两份 README 顶部加了仓库 / issue / npm 链接
+- 除此之外代码零改动（`client.js`、`index.js`、`cordis.patch.yml` 与 1.0.0 完全一致）
 
 ## 本机先把新包名接上
 

@@ -4,6 +4,8 @@ A Pomodoro timer for the [DeepSeek Harness](https://github.com/deepseek-ai/deeps
 
 English | [简体中文](README.zh.md)
 
+Repository: <https://github.com/cuznmop/dsh-pomodoro-timer> · Issues: <https://github.com/cuznmop/dsh-pomodoro-timer/issues> · Package: <https://www.npmjs.com/package/dsh-pomodoro-timer>
+
 ## Features
 
 - **Sidebar page** — clock icon in the left panel list opens a full page with a progress ring, controls, and statistics.

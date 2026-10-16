@@ -4,6 +4,8 @@
 
 [English](README.md) | 简体中文
 
+仓库：<https://github.com/cuznmop/dsh-pomodoro-timer> · 问题反馈：<https://github.com/cuznmop/dsh-pomodoro-timer/issues> · npm：<https://www.npmjs.com/package/dsh-pomodoro-timer>
+
 ## 功能
 
 - **侧栏整页** —— 左栏面板列表里的时钟图标，打开带环形进度、控制按钮和统计的完整页面。
