@@ -1,0 +1,51 @@
+name: publish
+
+# Publishes to npm from a GitHub Release through npm Trusted Publishing (OIDC),
+# so no npm token is stored in the repository.
+#
+# One-time setup on npmjs.com:
+#   Package → Settings → Publishing access → Trusted Publisher → GitHub Actions
+#   Organization/user: <your account>   Repository: dsh-pomodoro-timer
+#   Workflow filename: publish.yml      Environment: (leave empty)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Check the manifest version against the release tag
+        if: github.event_name == 'release'
+        run: |
+          node -e '
+            const version = require("./package.json").version;
+            const tag = process.env.TAG.replace(/^v/, "");
+            if (version !== tag) {
+              console.error(`package.json is ${version} but the release tag is ${process.env.TAG}`);
+              process.exit(1);
+            }
+          '
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Syntax and offline bundle checks
+        run: npm run check
+
+      - name: Publish
+        run: npm publish --access public --provenance
