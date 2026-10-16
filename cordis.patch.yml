@@ -1,0 +1,8 @@
+# Profile patch layer contributed by dsh-pomodoro-timer.
+#
+# A bundle patch may only *insert* rows. This one inserts the plugin's own Host
+# row, whose only job is to make the package's client bundle part of the Web
+# module graph; the feature itself lives in `client.js`.
+- insert:
+    - id: pomodoro-timer
+      name: 'dsh-pomodoro-timer'
